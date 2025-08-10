@@ -1,6 +1,6 @@
 {
-  "name": "@mohd-bilal.exe/nativemotion",
-  "version": "1.0.1",
+  "name": "motion-on-native",
+  "version": "1.0.5",
   "description": "Framer Motion-like animations for React Native using Reanimated",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -19,7 +19,7 @@
   "author": "Mohd Bilal",
   "license": "MIT",
   "peerDependencies": {
-    "react": "^19.1.1",
+    "react": ">=16.8.0",
     "react-native": ">=0.60.0",
     "react-native-reanimated": ">=3.0.0"
   },

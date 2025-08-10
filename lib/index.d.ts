@@ -10,11 +10,29 @@ export interface AnimationProps {
     height?: number;
     borderRadius?: number;
     backgroundColor?: string;
+    margin?: number;
+    marginTop?: number;
+    marginBottom?: number;
+    marginLeft?: number;
+    marginRight?: number;
+    padding?: number;
+    paddingTop?: number;
+    paddingBottom?: number;
+    paddingLeft?: number;
+    paddingRight?: number;
+    borderWidth?: number;
+    borderColor?: string;
+    top?: number;
+    bottom?: number;
+    left?: number;
+    right?: number;
 }
 export interface TransitionProps {
     type?: 'spring' | 'timing';
     duration?: number;
     damping?: number;
+    stiffness?: number;
+    mass?: number;
 }
 export interface MotionComponentProps {
     initial?: AnimationProps;
