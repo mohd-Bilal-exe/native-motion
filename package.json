@@ -1,0 +1,43 @@
+{
+  "name": "@mohd-bilal.exe/nativemotion",
+  "version": "1.0.0",
+  "description": "Framer Motion-like animations for React Native using Reanimated",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "react-native",
+    "animation",
+    "framer-motion",
+    "reanimated",
+    "motion"
+  ],
+  "author": "Mohd Bilal",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "^19.1.1",
+    "react-native": ">=0.60.0",
+    "react-native-reanimated": ">=3.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.9",
+    "@types/react-native": "^0.72.8",
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "lib",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/react-native-motion.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/react-native-motion/issues"
+  },
+  "homepage": "https://github.com/yourusername/react-native-motion#readme"
+}
