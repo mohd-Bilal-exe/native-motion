@@ -1,6 +1,6 @@
 {
   "name": "motion-on-native",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Framer Motion-like animations for React Native using Reanimated",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
