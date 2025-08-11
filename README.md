@@ -1,18 +1,19 @@
-# React Native Motion
+# Motion on Native
 
 Framer Motion-like animations for React Native using Reanimated.
 
 ## Installation
 
 ```bash
-npm install react-native-motion
+npm install motion-on-native
 # or
-yarn add react-native-motion
+yarn add motion-on-native
 ```
 
 ## Prerequisites
 
 This package requires:
+
 - `react-native-reanimated` >= 3.0.0
 - `react-native` >= 0.60.0
 - `react` >= 16.8.0
@@ -20,7 +21,7 @@ This package requires:
 ## Usage
 
 ```tsx
-import { NativeMotion } from 'react-native-motion';
+import { NativeMotion } from 'motion-on-native';
 
 // Basic animation
 <NativeMotion.View
