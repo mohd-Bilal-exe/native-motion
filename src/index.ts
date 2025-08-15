@@ -213,6 +213,7 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
 
         return () => clearTimeout(timer);
       }
+      return undefined;
     }, []);
 
     // Handle animate prop changes

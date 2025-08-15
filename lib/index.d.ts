@@ -1,31 +1,68 @@
 import React from 'react';
-import { ViewStyle } from 'react-native';
+import { View, ViewStyle } from 'react-native';
 export interface AnimationProps {
     opacity?: number;
     x?: number;
     y?: number;
+    z?: number;
     scale?: number;
+    scaleX?: number;
+    scaleY?: number;
     rotate?: string;
+    rotateX?: string;
+    rotateY?: string;
+    rotateZ?: string;
+    skewX?: string;
+    skewY?: string;
     width?: number;
     height?: number;
-    borderRadius?: number;
-    backgroundColor?: string;
+    minWidth?: number;
+    minHeight?: number;
+    maxWidth?: number;
+    maxHeight?: number;
     margin?: number;
     marginTop?: number;
     marginBottom?: number;
     marginLeft?: number;
     marginRight?: number;
+    marginHorizontal?: number;
+    marginVertical?: number;
     padding?: number;
     paddingTop?: number;
     paddingBottom?: number;
     paddingLeft?: number;
     paddingRight?: number;
+    paddingHorizontal?: number;
+    paddingVertical?: number;
+    borderRadius?: number;
+    borderTopLeftRadius?: number;
+    borderTopRightRadius?: number;
+    borderBottomLeftRadius?: number;
+    borderBottomRightRadius?: number;
     borderWidth?: number;
+    borderTopWidth?: number;
+    borderBottomWidth?: number;
+    borderLeftWidth?: number;
+    borderRightWidth?: number;
     borderColor?: string;
+    borderTopColor?: string;
+    borderBottomColor?: string;
+    borderLeftColor?: string;
+    borderRightColor?: string;
+    backgroundColor?: string;
+    color?: string;
     top?: number;
     bottom?: number;
     left?: number;
     right?: number;
+    shadowColor?: string;
+    shadowOffset?: {
+        width: number;
+        height: number;
+    };
+    shadowOpacity?: number;
+    shadowRadius?: number;
+    elevation?: number;
 }
 export interface TransitionProps {
     type?: 'spring' | 'timing';
@@ -33,31 +70,28 @@ export interface TransitionProps {
     damping?: number;
     stiffness?: number;
     mass?: number;
+    delay?: number;
+    ease?: string;
 }
 export interface MotionComponentProps {
-    initial?: AnimationProps;
+    initial?: AnimationProps | false;
     animate?: AnimationProps;
     exit?: AnimationProps;
     transition?: TransitionProps;
     shouldExit?: boolean;
     onExitComplete?: () => void;
+    whileHover?: AnimationProps;
+    whileTap?: AnimationProps;
+    whileFocus?: AnimationProps;
+    layout?: boolean;
+    layoutId?: string;
     style?: ViewStyle;
     children?: React.ReactNode;
 }
 export declare const NativeMotion: {
-    View: (props: MotionComponentProps & import("react-native").ViewProps) => React.FunctionComponentElement<{
-        style: any[];
-    } & Omit<MotionComponentProps & import("react-native").ViewProps, "style" | "animate" | "initial" | "exit" | "transition" | "children" | "shouldExit" | "onExitComplete">> | null;
-    Text: (props: MotionComponentProps & import("react-native").TextProps) => React.FunctionComponentElement<{
-        style: any[];
-    } & Omit<MotionComponentProps & import("react-native").TextProps, "style" | "animate" | "initial" | "exit" | "transition" | "children" | "shouldExit" | "onExitComplete">> | null;
-    Image: (props: MotionComponentProps & import("react-native").ImageProps) => React.FunctionComponentElement<{
-        style: any[];
-    } & Omit<MotionComponentProps & import("react-native").ImageProps, "style" | "animate" | "initial" | "exit" | "transition" | "children" | "shouldExit" | "onExitComplete">> | null;
-    TextInput: (props: MotionComponentProps & import("react-native").TextInputProps) => React.FunctionComponentElement<{
-        style: any[];
-    } & Omit<MotionComponentProps & import("react-native").TextInputProps, "style" | "animate" | "initial" | "exit" | "transition" | "children" | "shouldExit" | "onExitComplete">> | null;
-    TouchableOpacity: (props: MotionComponentProps & import("react-native").TouchableOpacityProps) => React.FunctionComponentElement<{
-        style: any[];
-    } & Omit<MotionComponentProps & import("react-native").TouchableOpacityProps, "style" | "animate" | "initial" | "exit" | "transition" | "children" | "shouldExit" | "onExitComplete">> | null;
+    View: (props: MotionComponentProps & import("react-native").ViewProps) => React.ReactElement<import("react-native-reanimated").AnimateProps<any>, string | React.JSXElementConstructor<any>> | null;
+    Text: (props: MotionComponentProps & import("react-native").TextProps) => React.ReactElement<import("react-native-reanimated").AnimateProps<any>, string | React.JSXElementConstructor<any>> | null;
+    Image: (props: MotionComponentProps & import("react-native").ImageProps) => React.ReactElement<import("react-native-reanimated").AnimateProps<any>, string | React.JSXElementConstructor<any>> | null;
+    TextInput: (props: MotionComponentProps & import("react-native").TextInputProps) => React.ReactElement<import("react-native-reanimated").AnimateProps<any>, string | React.JSXElementConstructor<any>> | null;
+    TouchableOpacity: (props: MotionComponentProps & import("react-native").TouchableOpacityProps & React.RefAttributes<View>) => React.ReactElement<import("react-native-reanimated").AnimateProps<any>, string | React.JSXElementConstructor<any>> | null;
 };
