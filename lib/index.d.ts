@@ -56,10 +56,6 @@ export interface AnimationProps {
     left?: number;
     right?: number;
     shadowColor?: string;
-    shadowOffset?: {
-        width: number;
-        height: number;
-    };
     shadowOpacity?: number;
     shadowRadius?: number;
     elevation?: number;
