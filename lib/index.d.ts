@@ -92,6 +92,11 @@ export declare const NativeMotion: {
     View: (props: MotionComponentProps & import("react-native").ViewProps) => React.ReactElement<import("react-native-reanimated").AnimateProps<any>, string | React.JSXElementConstructor<any>> | null;
     Text: (props: MotionComponentProps & import("react-native").TextProps) => React.ReactElement<import("react-native-reanimated").AnimateProps<any>, string | React.JSXElementConstructor<any>> | null;
     Image: (props: MotionComponentProps & import("react-native").ImageProps) => React.ReactElement<import("react-native-reanimated").AnimateProps<any>, string | React.JSXElementConstructor<any>> | null;
+    ImageBackground: (props: MotionComponentProps & import("react-native").ImageBackgroundProps) => React.ReactElement<import("react-native-reanimated").AnimateProps<any>, string | React.JSXElementConstructor<any>> | null;
     TextInput: (props: MotionComponentProps & import("react-native").TextInputProps) => React.ReactElement<import("react-native-reanimated").AnimateProps<any>, string | React.JSXElementConstructor<any>> | null;
     TouchableOpacity: (props: MotionComponentProps & import("react-native").TouchableOpacityProps & React.RefAttributes<View>) => React.ReactElement<import("react-native-reanimated").AnimateProps<any>, string | React.JSXElementConstructor<any>> | null;
+    ScrollView: (props: MotionComponentProps & import("react-native").ScrollViewProps) => React.ReactElement<import("react-native-reanimated").AnimateProps<any>, string | React.JSXElementConstructor<any>> | null;
+    FlatList: (props: MotionComponentProps & import("react-native").FlatListProps<unknown>) => React.ReactElement<import("react-native-reanimated").AnimateProps<any>, string | React.JSXElementConstructor<any>> | null;
+    SectionList: (props: MotionComponentProps & import("react-native").SectionListProps<unknown, unknown>) => React.ReactElement<import("react-native-reanimated").AnimateProps<any>, string | React.JSXElementConstructor<any>> | null;
+    Pressable: (props: MotionComponentProps & import("react-native").PressableProps & React.RefAttributes<View>) => React.ReactElement<import("react-native-reanimated").AnimateProps<any>, string | React.JSXElementConstructor<any>> | null;
 };
