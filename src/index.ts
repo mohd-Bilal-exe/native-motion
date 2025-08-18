@@ -1,6 +1,6 @@
-import React, { useEffect, useState, ComponentType, useRef } from 'react';
-import { View, Text, Image, TextInput, TouchableOpacity, ViewStyle } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
+import React, { useEffect, useState, ComponentType, useRef, useMemo } from 'react';
+import { View, Text, Image, ImageBackground, TextInput, TouchableOpacity, ScrollView, FlatList, SectionList, Pressable, ViewStyle } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, withRepeat, Easing, runOnJS } from 'react-native-reanimated';
 
 export interface AnimationProps {
   // Transform properties
@@ -8,6 +8,8 @@ export interface AnimationProps {
   x?: number;
   y?: number;
   z?: number;
+  translateX?: number;
+  translateY?: number;
   scale?: number;
   scaleX?: number;
   scaleY?: number;
@@ -86,6 +88,8 @@ export interface TransitionProps {
   mass?: number;
   delay?: number;
   ease?: string;
+  repeat?: number | 'infinity';
+  repeatType?: 'loop' | 'reverse';
 }
 
 export interface MotionComponentProps {
@@ -109,6 +113,8 @@ const DEFAULT_TRANSITION: TransitionProps = {
   damping: 15,
   stiffness: 100,
   duration: 300,
+  repeat: 0,
+  repeatType: 'loop',
 };
 
 function createMotionComponent<T extends ComponentType<any>>(Component: T) {
@@ -139,6 +145,8 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
     const x = useSharedValue(getInitialValue('x', initial));
     const y = useSharedValue(getInitialValue('y', initial));
     const z = useSharedValue(getInitialValue('z', initial));
+    const translateX = useSharedValue(getInitialValue('translateX', initial));
+    const translateY = useSharedValue(getInitialValue('translateY', initial));
     const scale = useSharedValue(getInitialValue('scale', initial));
     const scaleX = useSharedValue(getInitialValue('scaleX', initial));
     const scaleY = useSharedValue(getInitialValue('scaleY', initial));
@@ -212,15 +220,37 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
         if (value !== undefined) {
           const sharedValue = getSharedValue(key);
           if (sharedValue) {
-            const config = transitionConfig.type === 'spring' 
-              ? withSpring(value, {
-                  damping: transitionConfig.damping ?? DEFAULT_TRANSITION.damping!,
-                  stiffness: transitionConfig.stiffness ?? DEFAULT_TRANSITION.stiffness!,
-                  mass: transitionConfig.mass ?? 1,
-                })
-              : withTiming(value, { 
-                  duration: transitionConfig.duration ?? DEFAULT_TRANSITION.duration!,
-                });
+            let config;
+            
+            if (transitionConfig.repeat && (transitionConfig.repeat > 0 || transitionConfig.repeat === 'infinity')) {
+              // Use withRepeat for repeated animations
+              const baseAnimation = transitionConfig.type === 'spring' 
+                ? withSpring(value, {
+                    damping: transitionConfig.damping ?? DEFAULT_TRANSITION.damping!,
+                    stiffness: transitionConfig.stiffness ?? DEFAULT_TRANSITION.stiffness!,
+                    mass: transitionConfig.mass ?? 1,
+                  })
+                : withTiming(value, { 
+                    duration: transitionConfig.duration ?? DEFAULT_TRANSITION.duration!,
+                    easing: Easing.linear,
+                  });
+              
+              const repeatCount = transitionConfig.repeat === 'infinity' ? -1 : transitionConfig.repeat;
+              const reverse = transitionConfig.repeatType === 'reverse';
+              
+              config = withRepeat(baseAnimation, repeatCount, reverse);
+            } else {
+              // Single animation
+              config = transitionConfig.type === 'spring' 
+                ? withSpring(value, {
+                    damping: transitionConfig.damping ?? DEFAULT_TRANSITION.damping!,
+                    stiffness: transitionConfig.stiffness ?? DEFAULT_TRANSITION.stiffness!,
+                    mass: transitionConfig.mass ?? 1,
+                  })
+                : withTiming(value, { 
+                    duration: transitionConfig.duration ?? DEFAULT_TRANSITION.duration!,
+                  });
+            }
             
             if (transitionConfig.delay) {
               setTimeout(() => {
@@ -242,6 +272,8 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
         case 'x': return x;
         case 'y': return y;
         case 'z': return z;
+        case 'translateX': return translateX;
+        case 'translateY': return translateY;
         case 'scale': return scale;
         case 'scaleX': return scaleX;
         case 'scaleY': return scaleY;
@@ -313,23 +345,29 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
       }
     };
 
+    // Memoize animate prop to prevent unnecessary re-animations
+    const animateString = JSON.stringify(animate);
+    const memoizedAnimate = useMemo(() => animate, [animateString]);
+
+    // Set initial values on mount
+    useEffect(() => {
+      if (initial !== false) {
+        Object.entries(initial as AnimationProps).forEach(([key, value]) => {
+          const sharedValue = getSharedValue(key);
+          if (sharedValue && value !== undefined) {
+            sharedValue.value = value;
+          }
+        });
+      }
+    }, []);
+
     // Mount animation: initial -> animate
     useEffect(() => {
       if (!hasAnimated && !isExitingRef.current) {
-        // Set initial values immediately
-        if (initial !== false) {
-          Object.entries(initial as AnimationProps).forEach(([key, value]) => {
-            const sharedValue = getSharedValue(key);
-            if (sharedValue && value !== undefined) {
-              sharedValue.value = value;
-            }
-          });
-        }
-
         // Animate to target values
         const timer = setTimeout(() => {
           if (!isExitingRef.current) {
-            animateToValues(animate);
+            animateToValues(memoizedAnimate);
             setHasAnimated(true);
           }
         }, 16);
@@ -337,65 +375,60 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
         return () => clearTimeout(timer);
       }
       return undefined;
-    }, []);
-
+    }, [memoizedAnimate]);
+    
     // Handle animate prop changes (only animate if values actually changed)
-    const prevAnimateRef = useRef(animate);
+    const prevAnimateRef = useRef(memoizedAnimate);
     useEffect(() => {
       if (hasAnimated && !isExitingRef.current) {
         // Only animate if animate prop actually changed
-        const hasChanged = JSON.stringify(prevAnimateRef.current) !== JSON.stringify(animate);
+        const hasChanged = JSON.stringify(prevAnimateRef.current) !== JSON.stringify(memoizedAnimate);
         if (hasChanged) {
-          animateToValues(animate);
-          prevAnimateRef.current = animate;
+          animateToValues(memoizedAnimate);
+          prevAnimateRef.current = memoizedAnimate;
         }
       }
-    }, [animate]);
+    }, [memoizedAnimate]);
 
     // Handle shouldExit
     useEffect(() => {
-      if (shouldExit && !isExitingRef.current) {
+      if (shouldExit && !isExitingRef.current && exit && Object.keys(exit).length > 0) {
         isExitingRef.current = true;
         
-        if (exit && Object.keys(exit).length > 0) {
-          animateToValues(exit, transition);
-          
-          const exitDuration = transition.duration ?? 300;
-          setTimeout(() => {
-            setIsPresent(false);
-            if (onExitComplete) {
-              onExitComplete();
-            }
-          }, exitDuration);
-        } else {
+        animateToValues(exit, transition);
+        
+        const exitDuration = transition.duration ?? 300;
+        setTimeout(() => {
           setIsPresent(false);
           if (onExitComplete) {
             onExitComplete();
           }
-        }
+        }, exitDuration);
       } else if (!shouldExit && isExitingRef.current) {
         // Re-entering: reset everything
         isExitingRef.current = false;
         setIsPresent(true);
         setHasAnimated(false);
         
-        // Reset to initial values
-        if (initial !== false) {
-          Object.entries(initial as AnimationProps).forEach(([key, value]) => {
-            const sharedValue = getSharedValue(key);
-            if (sharedValue && value !== undefined) {
-              sharedValue.value = value;
-            }
-          });
-        }
-        
-        // Animate to target after a frame
+        // Reset to initial values and animate
         setTimeout(() => {
-          if (!isExitingRef.current) {
-            animateToValues(animate);
-            setHasAnimated(true);
+          if (initial !== false) {
+            Object.entries(initial as AnimationProps).forEach(([key, value]) => {
+              const sharedValue = getSharedValue(key);
+              if (sharedValue && value !== undefined) {
+                sharedValue.value = value;
+              }
+            });
           }
-        }, 16);
+          
+          // Animate to target after a frame
+          setTimeout(() => {
+            if (!isExitingRef.current) {
+              animateToValues(memoizedAnimate);
+              setHasAnimated(true);
+            }
+          }, 16);
+        }, 0);
       }
     }, [shouldExit]);
 
@@ -409,6 +442,8 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
       if (x.value !== 0) transform.push({ translateX: x.value });
       if (y.value !== 0) transform.push({ translateY: y.value });
       if (z.value !== 0) transform.push({ translateZ: z.value });
+      if (translateX.value !== 0) transform.push({ translateX: translateX.value });
+      if (translateY.value !== 0) transform.push({ translateY: translateY.value });
       if (scale.value !== 1) transform.push({ scale: scale.value });
       if (scaleX.value !== 1) transform.push({ scaleX: scaleX.value });
       if (scaleY.value !== 1) transform.push({ scaleY: scaleY.value });
@@ -515,6 +550,8 @@ function getDefaultValue(key: string): number | string {
     case 'x':
     case 'y':
     case 'z':
+    case 'translateX':
+    case 'translateY':
       return 0;
     case 'rotate':
     case 'rotateX':
@@ -532,6 +569,11 @@ export const NativeMotion = {
   View: createMotionComponent(View),
   Text: createMotionComponent(Text),
   Image: createMotionComponent(Image),
+  ImageBackground: createMotionComponent(ImageBackground),
   TextInput: createMotionComponent(TextInput),
   TouchableOpacity: createMotionComponent(TouchableOpacity),
+  ScrollView: createMotionComponent(ScrollView),
+  FlatList: createMotionComponent(FlatList),
+  SectionList: createMotionComponent(SectionList),
+  Pressable: createMotionComponent(Pressable),
 };

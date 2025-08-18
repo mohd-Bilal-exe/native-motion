@@ -5,6 +5,8 @@ export interface AnimationProps {
     x?: number;
     y?: number;
     z?: number;
+    translateX?: number;
+    translateY?: number;
     scale?: number;
     scaleX?: number;
     scaleY?: number;
@@ -68,6 +70,8 @@ export interface TransitionProps {
     mass?: number;
     delay?: number;
     ease?: string;
+    repeat?: number | 'infinity';
+    repeatType?: 'loop' | 'reverse';
 }
 export interface MotionComponentProps {
     initial?: AnimationProps | false;
