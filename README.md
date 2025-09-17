@@ -23,24 +23,18 @@ This package requires:
 ```tsx
 import { NativeMotion } from 'motion-on-native';
 
-// Basic animation
+// Controlled animation
 <NativeMotion.View
   initial={{ opacity: 0, x: -100 }}
   animate={{ opacity: 1, x: 0 }}
+  exit={{ opacity: 0, scale: 0 }}
+  shouldAnimate={shouldShow}
+  shouldDeAnimate={shouldHide}
+  shouldExit={shouldExit}
   transition={{ type: 'spring', damping: 15 }}
+  onExitComplete={() => console.log('Exit animation complete')}
 >
   <Text>Animated content</Text>
-</NativeMotion.View>
-
-// Exit animation
-<NativeMotion.View
-  initial={{ opacity: 0, scale: 0.5 }}
-  animate={{ opacity: 1, scale: 1 }}
-  exit={{ opacity: 0, scale: 0 }}
-  shouldExit={shouldHide}
-  onExitComplete={() => console.log('Animation complete')}
->
-  <Text>Content with exit animation</Text>
 </NativeMotion.View>
 ```
 
@@ -51,6 +45,13 @@ import { NativeMotion } from 'motion-on-native';
 - `NativeMotion.Image`
 - `NativeMotion.TextInput`
 - `NativeMotion.TouchableOpacity`
+
+## Animation Control Props
+
+- `shouldAnimate`: boolean - Triggers animation from `initial` to `animate`
+- `shouldDeAnimate`: boolean - Triggers animation from `animate` back to `initial`
+- `shouldExit`: boolean - Triggers animation from current state to `exit` (element stays mounted)
+- `onExitComplete`: callback - Called when exit animation completes
 
 ## Animation Properties
 

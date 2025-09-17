@@ -1,6 +1,6 @@
 {
   "name": "motion-on-native",
-  "version": "1.2.8",
+  "version": "1.3.0",
   "description": "Framer Motion-inspired animation library for React Native with Reanimated. Easy spring animations, gestures, and transitions for mobile apps.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

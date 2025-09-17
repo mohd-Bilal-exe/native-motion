@@ -1,6 +1,6 @@
 import React, { useEffect, useState, ComponentType, useRef, useMemo } from 'react';
 import { View, Text, Image, ImageBackground, TextInput, TouchableOpacity, ScrollView, FlatList, SectionList, Pressable, ViewStyle } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, withRepeat, Easing, runOnJS } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, withRepeat, Easing, runOnJS, interpolateColor } from 'react-native-reanimated';
 
 export interface AnimationProps {
   // Transform properties
@@ -97,6 +97,8 @@ export interface MotionComponentProps {
   animate?: AnimationProps;
   exit?: AnimationProps;
   transition?: TransitionProps;
+  shouldAnimate?: boolean;
+  shouldDeAnimate?: boolean;
   shouldExit?: boolean;
   onExitComplete?: () => void;
   whileHover?: AnimationProps;
@@ -124,6 +126,8 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
       animate = {},
       exit = {},
       transition = DEFAULT_TRANSITION,
+      shouldAnimate = false,
+      shouldDeAnimate = false,
       shouldExit = false,
       onExitComplete,
       whileHover,
@@ -135,10 +139,6 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
       children,
       ...rest
     } = props;
-
-    const [isPresent, setIsPresent] = useState(true);
-    const [hasAnimated, setHasAnimated] = useState(false);
-    const isExitingRef = useRef(false);
 
     // Create shared values
     const opacity = useSharedValue(getInitialValue('opacity', initial));
@@ -192,15 +192,26 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
     const borderBottomWidth = useSharedValue(getInitialValue('borderBottomWidth', initial));
     const borderLeftWidth = useSharedValue(getInitialValue('borderLeftWidth', initial));
     const borderRightWidth = useSharedValue(getInitialValue('borderRightWidth', initial));
-    const borderColor = useSharedValue(getInitialValue('borderColor', initial));
     const borderTopColor = useSharedValue(getInitialValue('borderTopColor', initial));
     const borderBottomColor = useSharedValue(getInitialValue('borderBottomColor', initial));
     const borderLeftColor = useSharedValue(getInitialValue('borderLeftColor', initial));
     const borderRightColor = useSharedValue(getInitialValue('borderRightColor', initial));
     
-    // Color properties
-    const backgroundColor = useSharedValue(getInitialValue('backgroundColor', initial));
-    const color = useSharedValue(getInitialValue('color', initial));
+    // Color properties - use progress values for interpolation
+    const backgroundColorProgress = useSharedValue(0);
+    const colorProgress = useSharedValue(0);
+    const borderColorProgress = useSharedValue(0);
+    const shadowColorProgress = useSharedValue(0);
+    
+    // Store color values for interpolation
+    const backgroundColorFrom = useRef(getInitialValue('backgroundColor', initial) as string);
+    const backgroundColorTo = useRef(getInitialValue('backgroundColor', initial) as string);
+    const colorFrom = useRef(getInitialValue('color', initial) as string);
+    const colorTo = useRef(getInitialValue('color', initial) as string);
+    const borderColorFrom = useRef(getInitialValue('borderColor', initial) as string);
+    const borderColorTo = useRef(getInitialValue('borderColor', initial) as string);
+    const shadowColorFrom = useRef(getInitialValue('shadowColor', initial) as string);
+    const shadowColorTo = useRef(getInitialValue('shadowColor', initial) as string);
     
     // Position properties
     const top = useSharedValue(getInitialValue('top', initial));
@@ -209,7 +220,7 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
     const right = useSharedValue(getInitialValue('right', initial));
     
     // Shadow properties
-    const shadowColor = useSharedValue(getInitialValue('shadowColor', initial));
+
     const shadowOpacity = useSharedValue(getInitialValue('shadowOpacity', initial));
     const shadowRadius = useSharedValue(getInitialValue('shadowRadius', initial));
     const elevation = useSharedValue(getInitialValue('elevation', initial));
@@ -218,12 +229,58 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
     const animateToValues = (targetValues: AnimationProps, transitionConfig = transition) => {
       Object.entries(targetValues).forEach(([key, value]) => {
         if (value !== undefined) {
+          // Handle color properties with interpolation
+          if (key === 'backgroundColor') {
+            backgroundColorTo.current = value as string;
+            const config = transitionConfig.type === 'spring' 
+              ? withSpring(1, {
+                  damping: transitionConfig.damping ?? DEFAULT_TRANSITION.damping!,
+                  stiffness: transitionConfig.stiffness ?? DEFAULT_TRANSITION.stiffness!,
+                })
+              : withTiming(1, { duration: transitionConfig.duration ?? DEFAULT_TRANSITION.duration! });
+            backgroundColorProgress.value = config;
+            return;
+          }
+          if (key === 'color') {
+            colorTo.current = value as string;
+            const config = transitionConfig.type === 'spring' 
+              ? withSpring(1, {
+                  damping: transitionConfig.damping ?? DEFAULT_TRANSITION.damping!,
+                  stiffness: transitionConfig.stiffness ?? DEFAULT_TRANSITION.stiffness!,
+                })
+              : withTiming(1, { duration: transitionConfig.duration ?? DEFAULT_TRANSITION.duration! });
+            colorProgress.value = config;
+            return;
+          }
+          if (key === 'borderColor') {
+            borderColorTo.current = value as string;
+            const config = transitionConfig.type === 'spring' 
+              ? withSpring(1, {
+                  damping: transitionConfig.damping ?? DEFAULT_TRANSITION.damping!,
+                  stiffness: transitionConfig.stiffness ?? DEFAULT_TRANSITION.stiffness!,
+                })
+              : withTiming(1, { duration: transitionConfig.duration ?? DEFAULT_TRANSITION.duration! });
+            borderColorProgress.value = config;
+            return;
+          }
+          if (key === 'shadowColor') {
+            shadowColorTo.current = value as string;
+            const config = transitionConfig.type === 'spring' 
+              ? withSpring(1, {
+                  damping: transitionConfig.damping ?? DEFAULT_TRANSITION.damping!,
+                  stiffness: transitionConfig.stiffness ?? DEFAULT_TRANSITION.stiffness!,
+                })
+              : withTiming(1, { duration: transitionConfig.duration ?? DEFAULT_TRANSITION.duration! });
+            shadowColorProgress.value = config;
+            return;
+          }
+          
+          // Handle non-color properties
           const sharedValue = getSharedValue(key);
           if (sharedValue) {
             let config;
             
             if (transitionConfig.repeat && (transitionConfig.repeat > 0 || transitionConfig.repeat === 'infinity')) {
-              // Use withRepeat for repeated animations
               const baseAnimation = transitionConfig.type === 'spring' 
                 ? withSpring(value, {
                     damping: transitionConfig.damping ?? DEFAULT_TRANSITION.damping!,
@@ -240,7 +297,6 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
               
               config = withRepeat(baseAnimation, repeatCount, reverse);
             } else {
-              // Single animation
               config = transitionConfig.type === 'spring' 
                 ? withSpring(value, {
                     damping: transitionConfig.damping ?? DEFAULT_TRANSITION.damping!,
@@ -319,15 +375,13 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
         case 'borderBottomWidth': return borderBottomWidth;
         case 'borderLeftWidth': return borderLeftWidth;
         case 'borderRightWidth': return borderRightWidth;
-        case 'borderColor': return borderColor;
+
         case 'borderTopColor': return borderTopColor;
         case 'borderBottomColor': return borderBottomColor;
         case 'borderLeftColor': return borderLeftColor;
         case 'borderRightColor': return borderRightColor;
         
-        // Color properties
-        case 'backgroundColor': return backgroundColor;
-        case 'color': return color;
+
         
         // Position properties
         case 'top': return top;
@@ -336,7 +390,7 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
         case 'right': return right;
         
         // Shadow properties
-        case 'shadowColor': return shadowColor;
+
         case 'shadowOpacity': return shadowOpacity;
         case 'shadowRadius': return shadowRadius;
         case 'elevation': return elevation;
@@ -344,10 +398,6 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
         default: return null;
       }
     };
-
-    // Memoize animate prop to prevent unnecessary re-animations
-    const animateString = JSON.stringify(animate);
-    const memoizedAnimate = useMemo(() => animate, [animateString]);
 
     // Set initial values on mount
     useEffect(() => {
@@ -361,74 +411,91 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
       }
     }, []);
 
-    // Mount animation: initial -> animate
+    // Handle shouldAnimate: initial -> animate
     useEffect(() => {
-      if (!hasAnimated && !isExitingRef.current) {
-        // Animate to target values
-        const timer = setTimeout(() => {
-          if (!isExitingRef.current) {
-            animateToValues(memoizedAnimate);
-            setHasAnimated(true);
-          }
-        }, 16);
-
-        return () => clearTimeout(timer);
-      }
-      return undefined;
-    }, [memoizedAnimate]);
-    
-    // Handle animate prop changes (only animate if values actually changed)
-    const prevAnimateRef = useRef(memoizedAnimate);
-    useEffect(() => {
-      if (hasAnimated && !isExitingRef.current) {
-        // Only animate if animate prop actually changed
-        const hasChanged = JSON.stringify(prevAnimateRef.current) !== JSON.stringify(memoizedAnimate);
-        if (hasChanged) {
-          animateToValues(memoizedAnimate);
-          prevAnimateRef.current = memoizedAnimate;
+      if (shouldAnimate) {
+        // Reset color progress and update from/to values
+        if (animate.backgroundColor) {
+          backgroundColorFrom.current = backgroundColorTo.current;
+          backgroundColorProgress.value = 0;
         }
+        if (animate.color) {
+          colorFrom.current = colorTo.current;
+          colorProgress.value = 0;
+        }
+        if (animate.borderColor) {
+          borderColorFrom.current = borderColorTo.current;
+          borderColorProgress.value = 0;
+        }
+        if (animate.shadowColor) {
+          shadowColorFrom.current = shadowColorTo.current;
+          shadowColorProgress.value = 0;
+        }
+        animateToValues(animate);
       }
-    }, [memoizedAnimate]);
+    }, [shouldAnimate]);
 
-    // Handle shouldExit
+    // Handle shouldDeAnimate: animate -> initial
     useEffect(() => {
-      if (shouldExit && !isExitingRef.current && exit && Object.keys(exit).length > 0) {
-        isExitingRef.current = true;
-        
+      if (shouldDeAnimate && initial !== false) {
+        const initialProps = initial as AnimationProps;
+        // Reset color progress and update from/to values
+        if (initialProps.backgroundColor) {
+          backgroundColorFrom.current = backgroundColorTo.current;
+          backgroundColorTo.current = initialProps.backgroundColor;
+          backgroundColorProgress.value = 0;
+        }
+        if (initialProps.color) {
+          colorFrom.current = colorTo.current;
+          colorTo.current = initialProps.color;
+          colorProgress.value = 0;
+        }
+        if (initialProps.borderColor) {
+          borderColorFrom.current = borderColorTo.current;
+          borderColorTo.current = initialProps.borderColor;
+          borderColorProgress.value = 0;
+        }
+        if (initialProps.shadowColor) {
+          shadowColorFrom.current = shadowColorTo.current;
+          shadowColorTo.current = initialProps.shadowColor;
+          shadowColorProgress.value = 0;
+        }
+        animateToValues(initialProps);
+      }
+    }, [shouldDeAnimate]);
+
+    // Handle shouldExit: animate -> exit (no unmount)
+    useEffect(() => {
+      if (shouldExit && exit && Object.keys(exit).length > 0) {
+        // Reset color progress and update from/to values
+        if (exit.backgroundColor) {
+          backgroundColorFrom.current = backgroundColorTo.current;
+          backgroundColorTo.current = exit.backgroundColor;
+          backgroundColorProgress.value = 0;
+        }
+        if (exit.color) {
+          colorFrom.current = colorTo.current;
+          colorTo.current = exit.color;
+          colorProgress.value = 0;
+        }
+        if (exit.borderColor) {
+          borderColorFrom.current = borderColorTo.current;
+          borderColorTo.current = exit.borderColor;
+          borderColorProgress.value = 0;
+        }
+        if (exit.shadowColor) {
+          shadowColorFrom.current = shadowColorTo.current;
+          shadowColorTo.current = exit.shadowColor;
+          shadowColorProgress.value = 0;
+        }
         animateToValues(exit, transition);
         
-        const exitDuration = transition.duration ?? 300;
-        setTimeout(() => {
-          setIsPresent(false);
-          if (onExitComplete) {
-            onExitComplete();
-          }
-        }, exitDuration);
-      } else if (!shouldExit && isExitingRef.current) {
-        // Re-entering: reset everything
-        isExitingRef.current = false;
-        setIsPresent(true);
-        setHasAnimated(false);
-        
-        // Reset to initial values and animate
-        setTimeout(() => {
-          if (initial !== false) {
-            Object.entries(initial as AnimationProps).forEach(([key, value]) => {
-              const sharedValue = getSharedValue(key);
-              if (sharedValue && value !== undefined) {
-                sharedValue.value = value;
-              }
-            });
-          }
-          
-          // Animate to target after a frame
+        if (onExitComplete) {
+          const exitDuration = transition.duration ?? 300;
           setTimeout(() => {
-            if (!isExitingRef.current) {
-              animateToValues(memoizedAnimate);
-              setHasAnimated(true);
-            }
-          }, 16);
-        }, 0);
+            onExitComplete();
+          }, exitDuration);
+        }
       }
     }, [shouldExit]);
 
@@ -491,15 +558,27 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
       if (borderBottomWidth.value !== 0) style.borderBottomWidth = borderBottomWidth.value;
       if (borderLeftWidth.value !== 0) style.borderLeftWidth = borderLeftWidth.value;
       if (borderRightWidth.value !== 0) style.borderRightWidth = borderRightWidth.value;
-      if (borderColor.value !== 0) style.borderColor = borderColor.value;
-      if (borderTopColor.value !== 0) style.borderTopColor = borderTopColor.value;
-      if (borderBottomColor.value !== 0) style.borderBottomColor = borderBottomColor.value;
-      if (borderLeftColor.value !== 0) style.borderLeftColor = borderLeftColor.value;
-      if (borderRightColor.value !== 0) style.borderRightColor = borderRightColor.value;
+      style.borderColor = interpolateColor(
+        borderColorProgress.value,
+        [0, 1],
+        [borderColorFrom.current, borderColorTo.current]
+      );
+      if (borderTopColor.value !== 'transparent') style.borderTopColor = borderTopColor.value;
+      if (borderBottomColor.value !== 'transparent') style.borderBottomColor = borderBottomColor.value;
+      if (borderLeftColor.value !== 'transparent') style.borderLeftColor = borderLeftColor.value;
+      if (borderRightColor.value !== 'transparent') style.borderRightColor = borderRightColor.value;
       
-      // Color properties
-      if (backgroundColor.value !== 0) style.backgroundColor = backgroundColor.value;
-      if (color.value !== 0) style.color = color.value;
+      // Color properties with interpolation
+      style.backgroundColor = interpolateColor(
+        backgroundColorProgress.value,
+        [0, 1],
+        [backgroundColorFrom.current, backgroundColorTo.current]
+      );
+      style.color = interpolateColor(
+        colorProgress.value,
+        [0, 1],
+        [colorFrom.current, colorTo.current]
+      );
       
       // Position properties
       if (top.value !== 0) style.top = top.value;
@@ -508,7 +587,11 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
       if (right.value !== 0) style.right = right.value;
       
       // Shadow properties
-      if (shadowColor.value !== 0) style.shadowColor = shadowColor.value;
+      style.shadowColor = interpolateColor(
+        shadowColorProgress.value,
+        [0, 1],
+        [shadowColorFrom.current, shadowColorTo.current]
+      );
       if (shadowOpacity.value !== 0) style.shadowOpacity = shadowOpacity.value;
       if (shadowRadius.value !== 0) style.shadowRadius = shadowRadius.value;
       if (elevation.value !== 0) style.elevation = elevation.value;
@@ -517,8 +600,6 @@ function createMotionComponent<T extends ComponentType<any>>(Component: T) {
     });
 
     const AnimatedComponent = Animated.createAnimatedComponent(Component);
-    
-    if (!isPresent) return null;
 
     return React.createElement(
       AnimatedComponent,
@@ -560,6 +641,15 @@ function getDefaultValue(key: string): number | string {
     case 'skewX':
     case 'skewY':
       return '0deg';
+    case 'backgroundColor':
+    case 'color':
+    case 'borderColor':
+    case 'borderTopColor':
+    case 'borderBottomColor':
+    case 'borderLeftColor':
+    case 'borderRightColor':
+    case 'shadowColor':
+      return 'transparent';
     default:
       return 0;
   }
